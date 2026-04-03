@@ -1,180 +1,83 @@
-# Prototype-Factory-Agent
+# Prototype Factory Agent
 
-🔥 Prototype Factory Agent: The Ultimate Multi-Screen Interaction Demo Tool
+**交互展项原型生成 Agent** — 将展项描述转化为可运行的单文件 HTML 低保真原型。
 
-English Version (GitHub Open Source Optimized)
+An AI agent that converts museum/exhibition descriptions into runnable single-file HTML lo-fi prototypes.
 
-🚀 Why This Project Exists
+---
 
-Tired of explaining complex multi-screen, multi-device interactive designs with boring PPTs?
-Sick of spending hours manually building low-fidelity prototypes that still don't make sense to clients?
-I built this Prototype Factory Agent to fix this exact pain point for every interaction designer, multimedia creator, and exhibition developer.
-✨ Key Features That Make It a Game-Changer
+## 什么是它 / What it does
 
-• 🖥️ One-Click Multi-Device Linkage: Auto-sync logic across screens, consoles, buttons, and physical installations
+你只需要描述一个展项（名称、设备类型、交互方式、内容类型、自动复位时间），Agent 会通过对话补全信息，然后生成一个可直接在浏览器打开的 HTML 原型文件。
 
-• 🎯 Instant Interactive Low-Fi Demos: Generate shareable, clickable prototypes in minutes, no manual debugging
+You describe an exhibit (name, device type, interaction method, content type, auto-reset timing), and the agent fills in missing details through conversation, then outputs a ready-to-run HTML prototype.
 
-• 📊 Presentation-First Design: Cast directly to screens for client meetings, logic flows clear at a glance
+**生成的原型包含 / Each prototype includes:**
+- 1920×1080 固定布局，黑/白/灰低保真风格
+- 左侧硬件流程图 + 右侧设备模拟区
+- 四状态机：待机 → 触发 → 展示 → 自动复位
+- 多媒体标注面板（音效 / 灯光 / 动画）
+- 所有文字双击可直接编辑
 
-• 💰 Massive Time & Cost Savings: Validate logic with low-fi first, avoid costly high-fidelity rework
+---
 
-• 🌐 HTML-Powered Presentations: Your next presentation doesn't have to be a PPT—interactive demos > static slides
-🎯 Who Is This For?
+## 文件说明 / File Structure
 
-• 🎨 Interaction & Multimedia Designers
+```
+Prototype-Factory-Agent/
+├── agent-prompt.txt          # Agent 系统提示词（粘贴到任何支持 system prompt 的工具）
+├── prototype-agent.html      # 可视化演示界面（直接浏览器打开）
+├── template/
+│   └── interactive-exhibit-lofi.html   # 低保真原型框架模板
+└── examples/
+    └── (可放置你生成的示例原型)
+```
 
-• 🏛️ Exhibition & Installation Developers
+---
 
-• 📱 UI/UX Designers working on cross-device experiences
+## 快速开始 / Quick Start
 
-• 🧑‍💻 Product Managers needing to demo complex workflows
+### 方式一：使用 Claude Code（推荐）
 
-• 🎓 Educators teaching multi-screen interaction logic
-💡 Core Philosophy
+1. 安装 [Claude Code](https://claude.ai/code)
+2. 在项目目录打开终端，启动 Claude Code
+3. 将 `agent-prompt.txt` 内容作为 system prompt，或直接告诉 Claude：
+   > "请扮演交互原型 Agent，按照 agent-prompt.txt 的规则工作"
+4. 描述你的展项，Agent 会引导你完成信息收集并生成 HTML
 
-Your next presentation doesn't have to be a PPT.
-Interactive, HTML-based demos are the future of presenting complex interactive systems—more intuitive, more convincing, and way more professional than static slides.
-📦 Use Cases
+### 方式二：其他 AI 工具
 
-• Multi-screen exhibition & smart space solution demos
+将 `agent-prompt.txt` 的内容粘贴为 system prompt，在任何支持自定义 system prompt 的 AI 工具中使用（ChatGPT、Cursor、API 调用等）。
 
-• Physical installation interaction logic verification
+### 查看演示界面
 
-• Cross-device product interaction prototype generation
+直接用浏览器打开 `prototype-agent.html` 可以看到 Agent 对话界面的视觉原型。
 
-• Client proposal & team alignment presentations
+---
 
-• Teaching & training for interactive design workflows
-🤝 Contribute & Star
+## 工作流程 / Workflow
 
-If this tool solves your pain point, give it a ⭐ Star!
-Contributions, feature requests, and feedback are all welcome to make this tool even better for the design community.
-🏷️ Tags
+```
+用户描述展项需求
+      ↓
+Agent 提取结构化信息（最多每轮问 3 个问题）
+      ↓
+信息完整后生成单文件 HTML
+      ↓
+浏览器直接打开预览 → 双击文字编辑 → 截图/演示
+```
 
-Agent Prototype Tool Interaction Design Multi-Screen Multimedia Low-Fi Prototype HTML Presentation Design Efficiency UI/UX Open Source Exhibition Design
-中文版（GitHub开源爆款优化版）
+---
 
-🔥 原型图工厂 Agent：多屏交互演示神器，设计师效率天花板
+## 适用场景 / Use Cases
 
-🚀 为什么做这个工具？
+- 博物馆 / 科技馆互动展项设计方案演示
+- 向客户说明展项交互逻辑与硬件布局
+- 内部评审用低保真原型
+- 快速验证展项创意
 
-做多媒体交互、多屏联动、装置交互的设计师们，谁没被这些痛点折磨过？
-用PPT讲复杂联动逻辑，客户听不懂、团队难对齐，越讲越乱；
-手动做低保真原型，挨个调屏、连逻辑、改流程，熬夜赶工还不直观；
-直接上高保真，方案一改全白费，时间和资源全浪费在无效试错上。
+---
 
-于是我做了这个原型图工厂Agent，专门解决多设备联动演示的世纪难题！
-✨ 核心亮点，直接封神
+## License
 
-• 🖥️ 多设备联动一键生成：自动串联多屏、中控、按钮、实体装置的交互逻辑，不用手动逐个调试
-
-• 🎯 可交互低保真Demo秒出：几分钟生成可点击、可演示的原型，投屏即懂，汇报说服力拉满
-
-• 💰 从源头省时间省资源：先用低保真跑通全流程，再做高保真/交付开发，彻底避免返工
-
-• 🌐 HTML交互汇报新范式：你的下一个汇报PPT，何必是PPT！交互式演示直接吊打静态PPT
-🎯 谁用谁香？
-
-• 🎨 多媒体/交互/展厅设计师
-
-• 🏛️ 装置艺术、智慧空间开发者
-
-• 📱 跨端体验UI/UX设计师
-
-• 🧑‍💻 需要演示复杂流程的产品经理
-
-• 🎓 交互设计教学与培训从业者
-💡 核心理念
-
-你的下一个汇报PPT，何必是PPT。
-更直观、更真实的HTML交互汇报，正在彻底替代传统PPT，成为复杂交互设计方案演示的新标准。
-📦 适用场景
-
-• 多屏展厅、智慧空间方案汇报
-
-• 实体装置交互逻辑验证与演示
-
-• 跨端产品交互原型快速生成
-
-• 客户提案、团队需求对齐
-
-• 交互设计教学与培训演示
-
-如果这个工具解决了你的痛点，欢迎给项目点个⭐ Star！
-欢迎提交Issue、PR，一起把它打造成设计师圈的效率神器！
-
-————————————2026.3.4————————
-Prototype Factory Agent
-
-English Version
-
-Introduction
-
-Hi, I'm dva. While learning Agent and skill development, I built this Prototype Factory Agent to solve a core pain point in my daily work: the difficulty of demonstrating multi-device, multi-screen interactive solutions.
-
-When working on projects like multi-screen linkage, console control, or physical device interactions, traditional PPT presentations are far too abstract. Clients and teams struggle to grasp the logic quickly, and manually creating low-fidelity prototypes is time-consuming and inefficient.
-
-This Agent generates interactive, demonstrable low-fidelity demos with one click, making complex linkage logic intuitive and easy to understand.
-Key Features
-
-• Automatic multi-device logic connection: Seamlessly link multi-screen, console, button, and physical device interactions
-
-• One-click low-fidelity prototype generation: No repeated manual debugging required
-
-• Instant screen projection & demonstration: Clear interaction flow and logic at a glance
-
-• Resource & time efficiency: Validate logic with low-fi first, then proceed to high-fidelity or design delivery, avoiding costly rework
-Design Concept
-
-Your next presentation doesn't have to be a PPT.
-A more intuitive, realistic HTML-based interactive presentation is gradually replacing traditional slide decks, especially for complex interactive design projects.
-Use Cases
-
-• Multimedia interaction solution presentations
-
-• Multi-screen linkage teaching & logic demonstrations
-
-• Physical device interaction showcases
-
-• Early project requirement alignment & proposal demos
-Tags
-
-Agent Prototype Tool Interaction Design Multi-screen Linkage Multimedia Interaction Low-fi Prototype HTML Presentation Design Efficiency UI/UX Open Source
-中文版
-
-原型图工厂 Agent
-
-简介
-
-大家好，这里是 dva。在学习 Agent 与技能开发的过程中，我针对日常工作的核心痛点，开发了这款原型图工厂 Agent，专门解决多媒体交互、多屏联动、多设备协同场景下的方案演示与汇报难题。
-
-在做多屏联动、中控一体机、实体装置交互等方案时，传统 PPT 表达过于抽象，客户与团队难以快速理解交互逻辑；手动制作低保真原型又耗时耗力、效率低下。
-
-这款 Agent 可以一键生成可演示、可交互的低保真 demo，让复杂的联动逻辑直观可见，彻底告别抽象空谈。
-核心亮点
-
-• 多设备逻辑自动串联：完美适配多屏、中控、按钮、实体装置等各类联动场景
-
-• 一键生成低保真原型：无需反复手动调试，高效输出可交互 demo
-
-• 投屏即演示：交互动线与逻辑一目了然，汇报说服力拉满
-
-• 极致省资源：先用低保真跑通方案，再推进高保真/平面落地，从源头避免返工
-设计理念
-
-你的下一个汇报 PPT，何必是 PPT。
-更直观、更真实的 HTML 交互汇报形式，正在逐步替代传统演示方式，尤其适配复杂的交互设计项目。
-适用场景
-
-• 多媒体交互方案汇报
-
-• 多屏联动教学与逻辑演示
-
-• 实体装置交互展示
-
-• 项目前期需求对齐与提案演示
-
-###标签 Agent 原型工具 交互设计 多屏联动 多媒体交互 低保真原型 HTML汇报 设计提效 UI/UX 开源
-
-
+MIT

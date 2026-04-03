@@ -1,0 +1,817 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>交互原型 Agent</title>
+<style>
+  :root {
+    --bg: #0f0f13;
+    --panel: #18181f;
+    --border: #2a2a38;
+    --accent: #6c63ff;
+    --accent2: #ff6b9d;
+    --text: #e8e8f0;
+    --muted: #7a7a9a;
+    --user-bg: #1e1e2e;
+    --agent-bg: #1a1a28;
+    --code-bg: #0d0d18;
+    --radius: 14px;
+    --radius-sm: 8px;
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body {
+    font-family: -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  /* ── TOP BAR ── */
+  .topbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 24px;
+    background: var(--panel);
+    border-bottom: 1px solid var(--border);
+    flex-shrink: 0;
+  }
+  .logo {
+    font-size: 18px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    background: linear-gradient(90deg, var(--accent), var(--accent2));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+  .api-row {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+  }
+  .api-input {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    color: var(--text);
+    padding: 7px 14px;
+    font-size: 13px;
+    width: 280px;
+    outline: none;
+    transition: border-color .2s;
+  }
+  .api-input:focus { border-color: var(--accent); }
+  .api-input::placeholder { color: var(--muted); }
+  .btn-sm {
+    padding: 7px 16px;
+    border: none;
+    border-radius: var(--radius-sm);
+    font-size: 13px;
+    cursor: pointer;
+    transition: opacity .2s;
+  }
+  .btn-sm:hover { opacity: .85; }
+  .btn-primary { background: var(--accent); color: #fff; }
+  .btn-ghost { background: var(--border); color: var(--text); }
+
+  /* ── LAYOUT ── */
+  .workspace {
+    flex: 1;
+    display: flex;
+    min-height: 0;
+  }
+
+  /* ── LEFT: CHAT ── */
+  .chat-panel {
+    width: 420px;
+    flex-shrink: 0;
+    border-right: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    background: var(--panel);
+  }
+  .chat-header {
+    padding: 16px 20px 12px;
+    border-bottom: 1px solid var(--border);
+    font-size: 13px;
+    color: var(--muted);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .status-dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: #4caf50;
+    animation: pulse-dot 2s infinite;
+  }
+  @keyframes pulse-dot {
+    0%,100%{ opacity:1; } 50%{ opacity:.4; }
+  }
+  .messages {
+    flex: 1;
+    overflow-y: auto;
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    scrollbar-width: thin;
+    scrollbar-color: var(--border) transparent;
+  }
+  .msg {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+  .msg-role {
+    font-size: 11px;
+    color: var(--muted);
+    font-weight: 600;
+    letter-spacing: .5px;
+    text-transform: uppercase;
+    padding: 0 4px;
+  }
+  .msg.agent .msg-role { color: var(--accent); }
+  .msg.user .msg-role { color: var(--accent2); }
+  .bubble {
+    padding: 12px 15px;
+    border-radius: var(--radius-sm);
+    font-size: 14px;
+    line-height: 1.65;
+    white-space: pre-wrap;
+    word-break: break-word;
+  }
+  .msg.agent .bubble {
+    background: var(--agent-bg);
+    border: 1px solid var(--border);
+    border-top-left-radius: 4px;
+  }
+  .msg.user .bubble {
+    background: var(--user-bg);
+    border: 1px solid #2e2e42;
+    border-top-right-radius: 4px;
+    align-self: flex-end;
+    max-width: 90%;
+  }
+  /* quick reply chips */
+  .chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    padding: 0 4px;
+    margin-top: 4px;
+  }
+  .chip {
+    padding: 6px 14px;
+    border-radius: 99px;
+    border: 1px solid var(--accent);
+    color: var(--accent);
+    font-size: 13px;
+    cursor: pointer;
+    transition: all .2s;
+    background: transparent;
+  }
+  .chip:hover { background: var(--accent); color: #fff; }
+
+  /* typing indicator */
+  .typing-indicator {
+    display: none;
+    gap: 4px;
+    padding: 12px 15px;
+    background: var(--agent-bg);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    border-top-left-radius: 4px;
+    width: fit-content;
+  }
+  .typing-indicator.show { display: flex; align-items: center; }
+  .dot {
+    width: 7px; height: 7px;
+    border-radius: 50%;
+    background: var(--muted);
+    animation: bounce .9s infinite;
+  }
+  .dot:nth-child(2){ animation-delay: .15s; }
+  .dot:nth-child(3){ animation-delay: .3s; }
+  @keyframes bounce {
+    0%,60%,100%{ transform: translateY(0); }
+    30%{ transform: translateY(-6px); }
+  }
+
+  .input-row {
+    padding: 12px 16px;
+    border-top: 1px solid var(--border);
+    display: flex;
+    gap: 10px;
+    align-items: flex-end;
+  }
+  textarea {
+    flex: 1;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    color: var(--text);
+    font-size: 14px;
+    font-family: inherit;
+    padding: 10px 14px;
+    resize: none;
+    max-height: 120px;
+    min-height: 42px;
+    outline: none;
+    transition: border-color .2s;
+    line-height: 1.5;
+  }
+  textarea:focus { border-color: var(--accent); }
+  textarea::placeholder { color: var(--muted); }
+  .send-btn {
+    width: 42px; height: 42px;
+    border-radius: var(--radius-sm);
+    border: none;
+    background: var(--accent);
+    color: #fff;
+    font-size: 18px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: opacity .2s, transform .1s;
+    flex-shrink: 0;
+  }
+  .send-btn:hover { opacity: .9; }
+  .send-btn:active { transform: scale(.95); }
+  .send-btn:disabled { opacity: .4; cursor: not-allowed; }
+
+  /* ── RIGHT: PREVIEW ── */
+  .preview-panel {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    background: var(--bg);
+    min-width: 0;
+  }
+  .preview-header {
+    padding: 12px 20px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    flex-shrink: 0;
+    background: var(--panel);
+  }
+  .preview-title {
+    font-size: 13px;
+    color: var(--muted);
+    font-weight: 600;
+  }
+  .preview-actions { display: flex; gap: 8px; }
+  .preview-frame {
+    flex: 1;
+    border: none;
+    background: #fff;
+    display: block;
+  }
+  .empty-preview {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 16px;
+    color: var(--muted);
+  }
+  .empty-icon { font-size: 64px; opacity: .3; }
+  .empty-text { font-size: 15px; opacity: .6; text-align: center; line-height: 1.8; }
+
+  /* progress bar */
+  .progress-bar {
+    height: 3px;
+    background: var(--border);
+    border-radius: 2px;
+    overflow: hidden;
+    margin: 0 16px 0;
+    flex-shrink: 0;
+    display: none;
+  }
+  .progress-bar.show { display: block; }
+  .progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--accent), var(--accent2));
+    border-radius: 2px;
+    transition: width .4s ease;
+  }
+
+  /* phase badge */
+  .phase-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 12px;
+    border-radius: 99px;
+    background: var(--border);
+    font-size: 12px;
+    color: var(--muted);
+    margin-bottom: 4px;
+  }
+  .phase-badge.active {
+    background: rgba(108,99,255,.2);
+    color: var(--accent);
+    border: 1px solid rgba(108,99,255,.4);
+  }
+
+  /* generating overlay */
+  .generating-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,.8);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 999;
+    flex-direction: column;
+    gap: 20px;
+  }
+  .generating-overlay.show { display: flex; }
+  .spinner {
+    width: 60px; height: 60px;
+    border: 4px solid var(--border);
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+  }
+  @keyframes spin { to{ transform:rotate(360deg); } }
+  .gen-text { color: var(--text); font-size: 18px; }
+  .gen-sub { color: var(--muted); font-size: 13px; }
+</style>
+</head>
+<body>
+
+<!-- TOP BAR -->
+<div class="topbar">
+  <div class="logo">⚡ 交互原型 Agent</div>
+  <div class="api-row">
+    <input class="api-input" id="apiKey" type="password" placeholder="粘贴 Anthropic API Key（sk-ant-...）">
+    <button class="btn-sm btn-primary" onclick="saveKey()">保存</button>
+    <button class="btn-sm btn-ghost" id="exportBtn" onclick="exportHTML()" style="display:none">导出 HTML</button>
+  </div>
+</div>
+
+<div class="workspace">
+  <!-- CHAT -->
+  <div class="chat-panel">
+    <div class="chat-header">
+      <div class="status-dot" id="statusDot"></div>
+      <span id="phaseLabel">准备就绪 · 请输入展项描述</span>
+    </div>
+    <div class="progress-bar" id="progressBar">
+      <div class="progress-fill" id="progressFill" style="width:0%"></div>
+    </div>
+    <div class="messages" id="messages"></div>
+    <div class="input-row">
+      <textarea id="userInput" placeholder="描述你的展项，比如「一个簪花体验展台，用户拍照后可以换上宋朝服饰」" rows="1"
+        onkeydown="handleKey(event)" oninput="autoResize(this)"></textarea>
+      <button class="send-btn" id="sendBtn" onclick="sendMessage()" title="发送">↑</button>
+    </div>
+  </div>
+
+  <!-- PREVIEW -->
+  <div class="preview-panel" id="previewPanel">
+    <div class="preview-header">
+      <span class="preview-title" id="previewTitle">预览区</span>
+      <div class="preview-actions">
+        <button class="btn-sm btn-ghost" onclick="refreshPreview()" id="refreshBtn" style="display:none">🔄 刷新</button>
+        <button class="btn-sm btn-ghost" onclick="openFullscreen()" id="fullscreenBtn" style="display:none">⛶ 全屏</button>
+      </div>
+    </div>
+    <div class="empty-preview" id="emptyPreview">
+      <div class="empty-icon">🎨</div>
+      <div class="empty-text">与 Agent 对话后，<br>原型将实时生成在这里</div>
+    </div>
+    <iframe class="preview-frame" id="previewFrame" style="display:none"></iframe>
+  </div>
+</div>
+
+<!-- Generating overlay -->
+<div class="generating-overlay" id="genOverlay">
+  <div class="spinner"></div>
+  <div class="gen-text">🤖 正在生成交互原型…</div>
+  <div class="gen-sub" id="genSub">这可能需要 10-30 秒</div>
+</div>
+
+<script>
+// ── STATE ──────────────────────────────────────────────────────────────────
+const PHASES = ['name','flow','style','extras','generate'];
+const PHASE_PROGRESS = { name:10, flow:35, style:60, extras:80, generate:100 };
+
+let state = {
+  phase: 'name',
+  info: {
+    name: '',
+    flow: '',
+    style: '',
+    extras: '',
+  },
+  generatedHTML: '',
+  history: [],   // for multi-turn API calls
+  apiKey: localStorage.getItem('anthropic_key') || '',
+};
+
+if (state.apiKey) document.getElementById('apiKey').value = '••••••••';
+
+// ── BOOT ──────────────────────────────────────────────────────────────────
+window.onload = () => {
+  agentSay(
+    `你好！我是**交互原型 Agent** 🎨\n\n我会通过几个问题了解你的展项，然后帮你生成一个可运行的低保真 HTML 交互原型。\n\n首先——**这个展项叫什么名字，大概是做什么的？**\n（随意描述，哪怕一句话也行）`,
+    []
+  );
+  updatePhaseUI();
+};
+
+// ── UI HELPERS ─────────────────────────────────────────────────────────────
+function autoResize(el) {
+  el.style.height = 'auto';
+  el.style.height = Math.min(el.scrollHeight, 120) + 'px';
+}
+
+function handleKey(e) {
+  if (e.key === 'Enter' && !e.shiftKey) {
+    e.preventDefault();
+    sendMessage();
+  }
+}
+
+function saveKey() {
+  const v = document.getElementById('apiKey').value.trim();
+  if (v && !v.startsWith('••')) {
+    state.apiKey = v;
+    localStorage.setItem('anthropic_key', v);
+    document.getElementById('apiKey').value = '••••••••';
+    agentSay('✅ API Key 已保存', []);
+  }
+}
+
+function updatePhaseUI() {
+  const labels = { name:'1/4 展项名称', flow:'2/4 交互流程', style:'3/4 界面风格', extras:'4/4 特殊交互', generate:'生成中…' };
+  document.getElementById('phaseLabel').textContent = labels[state.phase] || '';
+  const pct = PHASE_PROGRESS[state.phase] || 0;
+  document.getElementById('progressBar').classList.toggle('show', state.phase !== 'name');
+  document.getElementById('progressFill').style.width = pct + '%';
+}
+
+function agentSay(text, chips = []) {
+  const msgs = document.getElementById('messages');
+  const div = document.createElement('div');
+  div.className = 'msg agent';
+  div.innerHTML = `
+    <div class="msg-role">Agent</div>
+    <div class="bubble">${mdLight(text)}</div>
+    ${chips.length ? `<div class="chips">${chips.map(c=>`<button class="chip" onclick="chipClick('${c}')">${c}</button>`).join('')}</div>` : ''}
+  `;
+  msgs.appendChild(div);
+  msgs.scrollTop = msgs.scrollHeight;
+}
+
+function userSay(text) {
+  const msgs = document.getElementById('messages');
+  const div = document.createElement('div');
+  div.className = 'msg user';
+  div.innerHTML = `<div class="msg-role">你</div><div class="bubble">${esc(text)}</div>`;
+  msgs.appendChild(div);
+  msgs.scrollTop = msgs.scrollHeight;
+}
+
+function showTyping() {
+  const msgs = document.getElementById('messages');
+  const t = document.createElement('div');
+  t.className = 'msg agent';
+  t.id = 'typing';
+  t.innerHTML = `<div class="msg-role">Agent</div><div class="typing-indicator show"><div class="dot"></div><div class="dot"></div><div class="dot"></div></div>`;
+  msgs.appendChild(t);
+  msgs.scrollTop = msgs.scrollHeight;
+}
+
+function hideTyping() {
+  const t = document.getElementById('typing');
+  if (t) t.remove();
+}
+
+function chipClick(val) {
+  document.getElementById('userInput').value = val;
+  sendMessage();
+}
+
+function esc(s) { return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+// Very light markdown: **bold**, `code`, newlines
+function mdLight(s) {
+  return esc(s)
+    .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+    .replace(/`(.+?)`/g, '<code style="background:#222;padding:2px 6px;border-radius:4px;font-family:monospace">$1</code>')
+    .replace(/\n/g, '<br>');
+}
+
+// ── SEND MESSAGE ──────────────────────────────────────────────────────────
+async function sendMessage() {
+  const inp = document.getElementById('userInput');
+  const text = inp.value.trim();
+  if (!text) return;
+  inp.value = '';
+  inp.style.height = 'auto';
+  document.getElementById('sendBtn').disabled = true;
+
+  userSay(text);
+
+  // Store in history for multi-turn context
+  state.history.push({ role: 'user', content: text });
+
+  showTyping();
+  try {
+    await processPhase(text);
+  } catch(e) {
+    hideTyping();
+    agentSay(`⚠️ 出错了：${e.message}\n\n请检查 API Key 是否正确，或稍后重试。`, []);
+  }
+  document.getElementById('sendBtn').disabled = false;
+}
+
+// ── PHASE LOGIC ──────────────────────────────────────────────────────────
+async function processPhase(userText) {
+  if (state.phase === 'name') {
+    state.info.name = userText;
+    state.phase = 'flow';
+    updatePhaseUI();
+    hideTyping();
+
+    const reply = await callClaude_refine('flow', userText);
+    agentSay(reply, ['触摸屏开始 → 选择选项 → AI生成 → 展示结果', '扫码进入 → 填写信息 → 提交查看', '传感器感应 → 内容播放 → 结束自动复位']);
+
+  } else if (state.phase === 'flow') {
+    state.info.flow = userText;
+    state.phase = 'style';
+    updatePhaseUI();
+    hideTyping();
+
+    const reply = await callClaude_refine('style', userText);
+    agentSay(reply, ['科技感·深色·蓝紫渐变', '古典风·暖金·水墨质感', '清新自然·白底·绿色点缀', '现代简约·白灰黑·极简']);
+
+  } else if (state.phase === 'style') {
+    state.info.style = userText;
+    state.phase = 'extras';
+    updatePhaseUI();
+    hideTyping();
+
+    const reply = await callClaude_refine('extras', userText);
+    agentSay(reply, ['无特殊需求，直接生成', '需要倒计时自动复位', '需要多语言切换', '需要音效反馈提示']);
+
+  } else if (state.phase === 'extras') {
+    state.info.extras = userText;
+    state.phase = 'generate';
+    updatePhaseUI();
+    hideTyping();
+
+    // Show summary and confirm
+    const summary = `好的！我已经了解你的展项需求了 ✅\n\n📋 **信息汇总**\n- **展项名称**：${state.info.name}\n- **交互流程**：${state.info.flow}\n- **界面风格**：${state.info.style}\n- **特殊需求**：${state.info.extras}\n\n即将为你生成低保真 HTML 原型，需要 10-30 秒…`;
+    agentSay(summary, ['开始生成 🚀', '我要修改信息']);
+
+  } else if (state.phase === 'generate') {
+    if (userText.includes('修改')) {
+      state.phase = 'name';
+      state.info = { name:'', flow:'', style:'', extras:'' };
+      state.history = [];
+      updatePhaseUI();
+      agentSay('没问题，我们重新来过。**展项叫什么名字？**', []);
+      return;
+    }
+    // Generate
+    await generatePrototype();
+
+  } else if (state.phase === 'done') {
+    // Iterate on existing prototype
+    await iteratePrototype(userText);
+  }
+}
+
+// ── CLAUDE HELPERS ────────────────────────────────────────────────────────
+function getKey() {
+  const k = state.apiKey;
+  if (!k || k.startsWith('••')) {
+    throw new Error('请先在右上角输入并保存 Anthropic API Key');
+  }
+  return k;
+}
+
+// Light questions (haiku, fast)
+async function callClaude_refine(phase, userText) {
+  const questions = {
+    flow: `用户刚描述了展项"${state.info.name}"。现在需要了解交互流程。用简短中文向用户提问：这个展项的主要交互步骤是什么？（比如：用户进来先做什么，然后做什么，最后展示什么）。语气轻松自然，一两句话。`,
+    style: `展项"${state.info.name}"的交互流程是：${state.info.flow}。现在需要了解界面风格。用简短中文向用户提问风格偏好。语气轻松，一两句话。`,
+    extras: `展项"${state.info.name}"，流程"${state.info.flow}"，风格"${state.info.style}"。现在问用户有没有特殊交互需求（如倒计时、多语言、音效等），或者直接说无特殊需求。一两句话。`,
+  };
+
+  const prompt = questions[phase];
+
+  // If no key, use fallback questions
+  if (!state.apiKey || state.apiKey.startsWith('••')) {
+    const fallbacks = {
+      flow: '这个展项的主要交互步骤是什么？比如：用户进来先做什么，然后做什么，最后会看到什么结果？',
+      style: '界面风格偏好什么感觉？比如科技感深色、古典暖金、清新白色、极简现代等？',
+      extras: '还有什么特殊需求吗？比如需要倒计时自动复位、多语言切换、音效反馈，或者直接说"没有"也可以。',
+    };
+    return fallbacks[phase];
+  }
+
+  const resp = await fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: {
+      'x-api-key': getKey(),
+      'anthropic-version': '2023-06-01',
+      'content-type': 'application/json',
+      'anthropic-dangerous-direct-browser-access': 'true',
+    },
+    body: JSON.stringify({
+      model: 'claude-haiku-4-5',
+      max_tokens: 256,
+      messages: [{ role: 'user', content: prompt }],
+    }),
+  });
+  const data = await resp.json();
+  if (data.error) throw new Error(data.error.message);
+  return data.content[0].text.trim();
+}
+
+// ── GENERATE PROTOTYPE ────────────────────────────────────────────────────
+async function generatePrototype() {
+  document.getElementById('genOverlay').classList.add('show');
+
+  const systemPrompt = `你是一个专业的低保真原型生成器。根据用户的展项需求，生成一个完整可运行的单文件 HTML 交互原型。
+
+要求：
+1. 只输出 HTML 代码，不要任何解释，不要 markdown 代码块，直接输出 <!DOCTYPE html> 开头的完整 HTML
+2. 必须包含完整的 CSS（内联 <style>）和 JavaScript（内联 <script>）
+3. 所有交互逻辑用 JavaScript 模拟（无需真实 API）
+4. 低保真风格：用色块、emoji、占位符代替真实图片
+5. 必须有完整的交互流程，每个步骤都可以点击操作
+6. 必须有状态指示（顶部流程条/步骤指示）
+7. 必须有倒计时自动复位（如有需求）或"重新开始"按钮
+8. 界面需要全屏（100vw × 100vh）
+9. 参考低保真原型风格：用简单几何形状表达界面结构，重点展示交互逻辑和流程
+10. 代码质量要高，交互要流畅`;
+
+  const userPrompt = `请为以下展项生成低保真 HTML 交互原型：
+
+展项名称：${state.info.name}
+交互流程：${state.info.flow}
+界面风格：${state.info.style}
+特殊需求：${state.info.extras}
+
+参考风格示例（"簪花"展项）：
+- 顶部有标题栏 + 当前步骤流程条
+- 主体大区域展示当前步骤内容
+- 用大号 emoji/文字/色块模拟实际内容
+- 步骤间有明确的过渡动画
+- 底部或角落有状态指示
+
+请直接输出完整 HTML，无需任何解释。`;
+
+  try {
+    const key = getKey();
+    document.getElementById('genSub').textContent = '正在调用 Claude 生成代码…';
+
+    const resp = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'x-api-key': key,
+        'anthropic-version': '2023-06-01',
+        'content-type': 'application/json',
+        'anthropic-dangerous-direct-browser-access': 'true',
+      },
+      body: JSON.stringify({
+        model: 'claude-opus-4-6',
+        max_tokens: 8000,
+        thinking: { type: 'adaptive' },
+        system: systemPrompt,
+        messages: [{ role: 'user', content: userPrompt }],
+      }),
+    });
+
+    const data = await resp.json();
+    if (data.error) throw new Error(data.error.message);
+
+    // Extract HTML from response (handle possible thinking blocks)
+    let html = '';
+    for (const block of data.content) {
+      if (block.type === 'text') {
+        html += block.text;
+      }
+    }
+
+    // Strip markdown code fences if present
+    html = html.replace(/^```html?\n?/i, '').replace(/\n?```\s*$/, '').trim();
+
+    state.generatedHTML = html;
+    state.phase = 'done';
+
+    renderPreview(html);
+    document.getElementById('genOverlay').classList.remove('show');
+
+    agentSay('🎉 原型已生成！你可以在右侧预览并交互。\n\n**还想调整什么？** 直接告诉我，比如：\n- "把颜色改成蓝色"\n- "加一个加载动画"\n- "把步骤4改成显示二维码"', []);
+    document.getElementById('exportBtn').style.display = '';
+    updatePhaseUI();
+
+  } catch(e) {
+    document.getElementById('genOverlay').classList.remove('show');
+    agentSay(`⚠️ 生成失败：${e.message}`, ['重新生成 🔄']);
+    state.phase = 'generate';
+  }
+}
+
+// ── ITERATE ────────────────────────────────────────────────────────────────
+async function iteratePrototype(request) {
+  showTyping();
+  document.getElementById('genOverlay').classList.add('show');
+  document.getElementById('genSub').textContent = '正在修改原型…';
+
+  const prompt = `当前 HTML 原型代码如下：
+
+${state.generatedHTML}
+
+用户要求修改：${request}
+
+请直接输出修改后的完整 HTML，不要解释，不要 markdown 代码块。`;
+
+  try {
+    const resp = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'x-api-key': getKey(),
+        'anthropic-version': '2023-06-01',
+        'content-type': 'application/json',
+        'anthropic-dangerous-direct-browser-access': 'true',
+      },
+      body: JSON.stringify({
+        model: 'claude-opus-4-6',
+        max_tokens: 8000,
+        messages: [{ role: 'user', content: prompt }],
+      }),
+    });
+
+    const data = await resp.json();
+    if (data.error) throw new Error(data.error.message);
+
+    let html = data.content.find(b => b.type === 'text')?.text || '';
+    html = html.replace(/^```html?\n?/i, '').replace(/\n?```\s*$/, '').trim();
+
+    state.generatedHTML = html;
+    renderPreview(html);
+
+    hideTyping();
+    document.getElementById('genOverlay').classList.remove('show');
+    agentSay('✅ 已更新！还有其他修改吗？', []);
+
+  } catch(e) {
+    hideTyping();
+    document.getElementById('genOverlay').classList.remove('show');
+    agentSay(`⚠️ 修改失败：${e.message}`, []);
+  }
+}
+
+// ── PREVIEW ───────────────────────────────────────────────────────────────
+function renderPreview(html) {
+  const frame = document.getElementById('previewFrame');
+  const empty = document.getElementById('emptyPreview');
+  empty.style.display = 'none';
+  frame.style.display = 'block';
+
+  // Write into iframe
+  frame.srcdoc = html;
+
+  document.getElementById('previewTitle').textContent = `预览 · ${state.info.name}`;
+  document.getElementById('refreshBtn').style.display = '';
+  document.getElementById('fullscreenBtn').style.display = '';
+}
+
+function refreshPreview() {
+  if (state.generatedHTML) renderPreview(state.generatedHTML);
+}
+
+function openFullscreen() {
+  const w = window.open();
+  w.document.write(state.generatedHTML);
+  w.document.close();
+}
+
+function exportHTML() {
+  if (!state.generatedHTML) return;
+  const blob = new Blob([state.generatedHTML], { type: 'text/html;charset=utf-8' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = (state.info.name || 'prototype') + '-demo.html';
+  a.click();
+}
+</script>
+</body>
+</html>
